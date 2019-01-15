@@ -23,7 +23,9 @@
 #ifndef MCV_H
 #define MCV_H
 
-#include <cv.h>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core/utility.hpp>
 
 /*! \file */
 
@@ -126,8 +128,8 @@ double mcvPSNR(IplImage * ground_truth, IplImage * approx, int border, int width
 IplImage * mcvGetPatch(IplImage * image, int u, int v, int width, int height);
 void mcvGetPatch(IplImage * image, IplImage * patch, int u, int v);
 
-void mcvComputeAffineTransfo(float * a, 
-                             int u, int v, 
+void mcvComputeAffineTransfo(float * a,
+                             int u, int v,
                              float theta, float phi, float lambda1, float lambda2, float tx, float ty);
 
 #endif // MCV_H

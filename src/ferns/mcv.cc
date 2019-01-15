@@ -23,13 +23,10 @@
 #include <iostream>
 #include <math.h>
 
-#include <cv.h>
-#include <highgui.h>
-
-/* Newer OpenCV releases don't define CV_MIN */
-#ifndef CV_MIN
-#define CV_MIN(a, b)   ((a) <= (b) ? (a) : (b)) 
-#endif
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core/utility.hpp>
+using namespace cv;
 
 #include "mcv.h"
 
@@ -217,14 +214,14 @@ IplImage * mcvGrayToColor(IplImage * grayImage)
   if (grayImage->depth == IPL_DEPTH_32F)
     {
       IplImage * tempImage;
-      
+
       double min = 255, max = 0;
       CvPoint Pmin, Pmax;
       cvMinMaxLoc(grayImage, &min, &max, &Pmin, &Pmax);
       tempImage = cvCreateImage(cvSize(grayImage->width, grayImage->height), IPL_DEPTH_8U, 1);
       cvConvertScale(grayImage, tempImage, 255. / (max - min), -min * 255 / (max - min));
-      cvCvtColor(tempImage, result, CV_GRAY2RGB);      
-      cvReleaseImage(&tempImage);      
+      cvCvtColor(tempImage, result, CV_GRAY2RGB);
+      cvReleaseImage(&tempImage);
     }
   else
     cvCvtColor(grayImage, result, CV_GRAY2RGB);
@@ -268,7 +265,7 @@ IplImage * mcvFloatToHue(IplImage * floatImage, int curve_number)
   if (floatImage->depth != IPL_DEPTH_32F)
     return 0;
 
-  IplImage * result = cvCreateImage(cvSize(floatImage->width, floatImage->height), 
+  IplImage * result = cvCreateImage(cvSize(floatImage->width, floatImage->height),
                                     IPL_DEPTH_8U, 3);
   double min = 255, max = 0;
   CvPoint Pmin, Pmax;
@@ -286,7 +283,7 @@ IplImage * mcvFloatToHue(IplImage * floatImage, int curve_number)
         int l1 = int( ((log(row[x]) - log(min)) / (log(max) - log(min))) * curve_number );
         int l2 = int( ((log(row[x + 1]) - log(min)) / (log(max) - log(min))) * curve_number );
         int l3 = int( ((log(row[x + floatImage->width]) - log(min)) / (log(max) - log(min))) * curve_number );
-        if (l1 != l2 || l1 != l3) 
+        if (l1 != l2 || l1 != l3)
           use_color = false;
       }
 
@@ -315,7 +312,7 @@ IplImage * mcvFloatToGray(IplImage * floatImage, int curve_number)
   if (floatImage->depth != IPL_DEPTH_32F)
     return 0;
 
-  IplImage * result = cvCreateImage(cvSize(floatImage->width, floatImage->height), 
+  IplImage * result = cvCreateImage(cvSize(floatImage->width, floatImage->height),
                                     IPL_DEPTH_8U, 3);
   double min = 255, max = 0;
   CvPoint Pmin, Pmax;
@@ -333,7 +330,7 @@ IplImage * mcvFloatToGray(IplImage * floatImage, int curve_number)
         int l1 = int( (row[x] - min) / (max - min) * curve_number );
         int l2 = int( (row[x + 1] - min) / (max - min) * curve_number );
         int l3 = int( (row[x + floatImage->width] - min) / (max - min) * curve_number );
-        if (l1 != l2 || l1 != l3) 
+        if (l1 != l2 || l1 != l3)
           use_gray = false;
       }
 
@@ -368,7 +365,7 @@ IplImage * showLocalMinima(IplImage * image)
     for(int x = 1; x < image->width - 1; x++)
     {
       if (row[x] < row[x - 1] && row[x] < row[x + 1] &&
-        row[x] < row[x - dy] && row[x] < row[x + dy] && 
+        row[x] < row[x - dy] && row[x] < row[x + dy] &&
         row[x] < row[x - dy - 1] && row[x] < row[x + dy - 1] &&
         row[x] < row[x - dy + 1] && row[x] < row[x + dy + 1])
       {
@@ -395,8 +392,8 @@ IplImage * showLocalMaxima(IplImage * image)
     for(int x = 1; x < image->width - 1; x++)
     {
       if (row[x] > row[x - 1] && row[x] > row[x + 1] &&
-          row[x] > row[x - dy] && row[x] > row[x + dy] && 
-          row[x] > row[x - dy - 1] && row[x] > row[x + dy - 1] && 
+          row[x] > row[x - dy] && row[x] > row[x + dy] &&
+          row[x] > row[x - dy - 1] && row[x] > row[x + dy - 1] &&
           row[x] > row[x - dy + 1] && row[x] > row[x + dy + 1])
       {
         row_r[3 * x] = 0;
@@ -442,8 +439,11 @@ int mcvSaveImage(const char * filename, IplImage * image, bool verbose)
 
   int result;
 
-  if (image->depth == IPL_DEPTH_8U)
-    result = cvSaveImage(filename, image);
+  if (image->depth == IPL_DEPTH_8U) {
+    cv::Mat tempMat = cv::cvarrToMat(image);
+    cv::imwrite(filename, tempMat);
+    //result = cvSaveImage(filename, image);
+  }
   else
   {
     IplImage * tempImage;
@@ -458,7 +458,10 @@ int mcvSaveImage(const char * filename, IplImage * image, bool verbose)
     tempImage = cvCreateImage(cvSize(image->width, image->height), IPL_DEPTH_8U, 1);
     cvConvertScale(image, tempImage, 255. / (max - min), -min * 255 / (max - min));
 
-    result = cvSaveImage(filename, tempImage);
+
+    cv::Mat tempMat = cv::cvarrToMat(tempImage);
+    imwrite(filename, tempMat);
+    //result = cvSaveImage(filename, tempImage);
 
     cvReleaseImage(&tempImage);
   }
@@ -589,8 +592,8 @@ void mcvReplaceByNoise(IplImage * image, int value)
       unsigned char * line = mcvRow(image, l, unsigned char);
 
       for(int c = 0; c < image->width; c++)
-	if (int(line[c]) == value)
-	  line[c] = (unsigned char)(rand() % 256);
+  if (int(line[c]) == value)
+    line[c] = (unsigned char)(rand() % 256);
     }
 }
 
@@ -603,21 +606,21 @@ void mcvAddWhiteNoise(const IplImage * image, const int minNoise, const int maxN
       unsigned char * line = mcvRow(image, y, unsigned char);
 
       for(int x = 0; x < image->width; x++)
-	{
-	  int p = line[x];
-	  int noise = rand() % (2 * deltaNoise + 1) - deltaNoise;
+  {
+    int p = line[x];
+    int noise = rand() % (2 * deltaNoise + 1) - deltaNoise;
 
-	  if (noise < 0)
-	    noise -= minNoise;
-	  else
-	    noise += minNoise;
+    if (noise < 0)
+      noise -= minNoise;
+    else
+      noise += minNoise;
 
-	  p += noise;
-	  if (p > 255) p = 255;
-	  if (p < 0)   p = 0;
+    p += noise;
+    if (p > 255) p = 255;
+    if (p < 0)   p = 0;
 
-	  line[x] = (unsigned char)p;
-	}
+    line[x] = (unsigned char)p;
+  }
     }
 }
 
@@ -628,18 +631,18 @@ void mcvAddWhiteNoise(const IplImage * image, const int maxNoise)
       unsigned char * line = (unsigned char *)(image->imageData + y * image->widthStep);
 
       for(int x = 0; x < image->width; x++)
-	{
-	  int p = line[x];
+  {
+    int p = line[x];
 
-	  p += rand() % (2 * maxNoise + 1) - maxNoise;
+    p += rand() % (2 * maxNoise + 1) - maxNoise;
 
-	  if (p > 255)
-	    p = 255;
-	  else if (p < 0)
-	    p = 0;
+    if (p > 255)
+      p = 255;
+    else if (p < 0)
+      p = 0;
 
-	  line[x] = (unsigned char)p;
-	}
+    line[x] = (unsigned char)p;
+  }
     }
 }
 
@@ -748,7 +751,7 @@ IplImage * mcvZoom(IplImage * source, int xc, int yc, float zoom)
 
 void mcvPut(IplImage * destImage, IplImage * imageToCopy, int x, int y)
 {
-	/*
+  /*
   IplROI roi;
   roi.xOffset = x;
   roi.yOffset = y;
@@ -771,21 +774,21 @@ void mcvPut(IplImage * destImage, IplImage * imageToCopy, int x, int y)
 
   destImage->roi = tempRoi;
   */
-	// Julien's version, handles clipping
-	CvMat dst, src;
-	int w = CV_MIN(imageToCopy->width, destImage->width-x);
-	int h = CV_MIN(imageToCopy->height, destImage->height-y);
+  // Julien's version, handles clipping
+  CvMat dst, src;
+  int w = MIN(imageToCopy->width, destImage->width-x);
+  int h = MIN(imageToCopy->height, destImage->height-y);
 
-	cvGetSubRect(destImage, &dst, cvRect(x,y,w,h));
-	cvGetSubRect(imageToCopy, &src, cvRect(0,0,w,h));
+  cvGetSubRect(destImage, &dst, cvRect(x,y,w,h));
+  cvGetSubRect(imageToCopy, &src, cvRect(0,0,w,h));
 
-	if (imageToCopy->nChannels == destImage->nChannels) {
-		cvCvtScale(&src, &dst);
-	} else if (imageToCopy->nChannels==3) {
-		cvCvtColor(&src, &dst, CV_BGR2GRAY);
-	} else {
-		cvCvtColor(&src, &dst, CV_GRAY2BGR);
-	}
+  if (imageToCopy->nChannels == destImage->nChannels) {
+    cvCvtScale(&src, &dst);
+  } else if (imageToCopy->nChannels==3) {
+    cvCvtColor(&src, &dst, CV_BGR2GRAY);
+  } else {
+    cvCvtColor(&src, &dst, CV_GRAY2BGR);
+  }
 }
 
 void mcvDeinterlace(IplImage * image)
@@ -826,16 +829,16 @@ void imcvR3z(double Rz[3][3], double angle)
 
 void imcvDiag3(double D[3][3], double d1, double d2, double d3)
 {
-  D[0][0] = d1; D[0][1] = 0.; D[0][2] = 0.; 
-  D[1][0] = 0.; D[1][1] = d2; D[1][2] = 0.; 
-  D[2][0] = 0.; D[2][1] = 0.; D[2][2] = d3; 
+  D[0][0] = d1; D[0][1] = 0.; D[0][2] = 0.;
+  D[1][0] = 0.; D[1][1] = d2; D[1][2] = 0.;
+  D[2][0] = 0.; D[2][1] = 0.; D[2][2] = d3;
 }
 
 void imcvTransl3(double T[3][3], double tx, double ty)
 {
-  T[0][0] = 1.; T[0][1] = 0.; T[0][2] = tx; 
-  T[1][0] = 0.; T[1][1] = 1.; T[1][2] = ty; 
-  T[2][0] = 0.; T[2][1] = 0.; T[2][2] = 1.; 
+  T[0][0] = 1.; T[0][1] = 0.; T[0][2] = tx;
+  T[1][0] = 0.; T[1][1] = 1.; T[1][2] = ty;
+  T[2][0] = 0.; T[2][1] = 0.; T[2][2] = 1.;
 }
 
 void imcvMul_MN3(double A[3][3], double B[3][3], double AB[3][3])
@@ -880,17 +883,17 @@ void imcvMul_MNMt3(double M[3][3], double N[3][3], double MNMt[3][3])
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-/* 
+/*
 cf Multiple view geometry, p. 19
 A = T(tx, ty) R(theta) R(-phi) D(lambda1, lambda2) R(phi)
 
-!!! actually compute the inverse of A to be opencv complient 
+!!! actually compute the inverse of A to be opencv complient
 */
 
-void mcvComputeAffineTransfo(float * a, 
-                             int u, int v, 
-                             float theta, float phi, 
-                             float lambda1, float lambda2, 
+void mcvComputeAffineTransfo(float * a,
+                             int u, int v,
+                             float theta, float phi,
+                             float lambda1, float lambda2,
                              float tx, float ty)
 {
   double K[3][3];
@@ -937,4 +940,3 @@ CvScalar mcvRainbowColor(int index, float coeff)
   default: return CV_RGB(128, 128, 128);
   }
 }
-

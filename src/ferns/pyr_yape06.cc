@@ -101,9 +101,7 @@ void pyr_yape06::compute_laplacian(IplImage * smoothed_image)
 
   const int w = smoothed_image->width;
   const int h = smoothed_image->height;
-  if (w == 88 && h == 68)
-    compute_laplacian(smoothed_image, laplacian, 88, 68, R, R * 88, Rp + Rp * 88, Rp - Rp * 88);
-  else if (w == 784 && h == 640)
+  if (w == 784 && h == 640)
     compute_laplacian(smoothed_image, laplacian, 784, 640, R, R * 784, Rp + Rp * 784, Rp - Rp * 784);
   else if (w == 768 && h == 640)
     compute_laplacian(smoothed_image, laplacian, 768, 640, R, R * 768, Rp + Rp * 768, Rp - Rp * 768);

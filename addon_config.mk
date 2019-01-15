@@ -6,8 +6,12 @@ meta:
 
 common:
 	ADDON_DEPENDENCIES = ofxOpenCv
+
 	# Include zlib headers for Windows (zlib libraries are included in ofxOpenCv)
 	ADDON_INCLUDES += include
 	ADDON_SOURCES_EXCLUDE = AUTHORS COPYING README
 	ADDON_SOURCES_EXCLUDE += Makefile Makefile.icc
 	ADDON_SOURCES_EXCLUDE += model.bmp model.bmp.roi
+
+linux64:
+	ADDON_LDFLAGS += -fopenmp
